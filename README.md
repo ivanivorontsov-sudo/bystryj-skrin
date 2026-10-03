@@ -70,6 +70,7 @@
 ```
 BystryjSkrin.exe                      запуск в трее
 BystryjSkrin.exe --capture            сразу открыть выделение (или попросить об этом уже запущенную копию)
+BystryjSkrin.exe --settings           открыть настройки (в запущенной копии)
 BystryjSkrin.exe --quit               закрыть запущенную копию
 BystryjSkrin.exe --capture-rect x,y,ш,в [--out папка] [--format png|jpg]
                                       снимок области без окна (координаты экрана в пикселях, могут быть отрицательными);

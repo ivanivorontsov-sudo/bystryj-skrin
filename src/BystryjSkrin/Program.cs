@@ -14,7 +14,7 @@ namespace BystryjSkrin
         internal sealed class Options
         {
             public string ConfigDir;
-            public bool Capture, Quit, Autostart;
+            public bool Capture, Quit, Autostart, Settings;
             public string CaptureRect, Out, Format, Marker;
             public string Error;
         }
@@ -31,6 +31,7 @@ namespace BystryjSkrin
                     case "--config-dir": o.ConfigDir = next(); break;
                     case "--capture": o.Capture = true; break;
                     case "--quit": o.Quit = true; break;
+                    case "--settings": o.Settings = true; break;
                     case "--autostart": o.Autostart = true; break;
                     case "--capture-rect": o.CaptureRect = next(); break;
                     case "--out": o.Out = next(); break;
@@ -90,7 +91,7 @@ namespace BystryjSkrin
                 if (!createdNew)
                 {
                     // Уже запущено: просим работающий экземпляр сделать скриншот или показать подсказку
-                    if (!Signal(opt.Capture ? "capture" : "show"))
+                    if (!Signal(opt.Capture ? "capture" : opt.Settings ? "settings" : "show"))
                         Dialogs.Warn("«Быстрый скрин» уже запущен, но не отвечает (возможно, он запущен от имени администратора).\n\nЗакройте его через значок в трее или Диспетчер задач и запустите снова.");
                     return 0;
                 }
@@ -99,10 +100,11 @@ namespace BystryjSkrin
                 using (var evCapture = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\" + Id + "-capture"))
                 using (var evShow = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\" + Id + "-show"))
                 using (var evQuit = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\" + Id + "-quit"))
+                using (var evSettings = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\" + Id + "-settings"))
                 {
                     try
                     {
-                        app = new TrayApp(configDir, opt.Capture);
+                        app = new TrayApp(configDir, opt.Capture, opt.Settings);
                     }
                     catch (Exception ex)
                     {
@@ -112,13 +114,14 @@ namespace BystryjSkrin
                     }
                     var waiter = new Thread(() =>
                     {
-                        var handles = new WaitHandle[] { evCapture, evShow, evQuit };
+                        var handles = new WaitHandle[] { evCapture, evShow, evQuit, evSettings };
                         while (true)
                         {
                             int i;
                             try { i = WaitHandle.WaitAny(handles); } catch { return; }
                             if (i == 0) app.Post(() => app.StartCapture(150));
                             else if (i == 1) app.Post(() => Dialogs.Info("«Быстрый скрин» уже работает — его значок в трее (возле часов; может быть спрятан под стрелкой «^»).\n\nСкриншот: " + "сочетание клавиш из меню значка или щелчок по значку."));
+                            else if (i == 3) app.Post(app.OpenSettings);
                             else { app.Post(app.ExitThread); return; }
                         }
                     }) { IsBackground = true, Name = "signals" };

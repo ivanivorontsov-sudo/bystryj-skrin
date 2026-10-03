@@ -120,6 +120,16 @@ $p = Start-Process $exe -ArgumentList @('--quit') -Wait -PassThru
 $app.WaitForExit(10000) | Out-Null
 Check ($app.HasExited) "--quit закрыл программу"
 
+Write-Host "6) окно настроек"
+$app = Start-Process $exe -ArgumentList @('--config-dir', "`"$cfg2`"", '--settings') -PassThru
+Start-Sleep -Seconds 4
+UiShot '06-settings'
+[In]::Keys(0x1B); Start-Sleep -Milliseconds 800   # Esc закрывает окно настроек
+Check (-not $app.HasExited) "после закрытия настроек программа работает"
+Start-Process $exe -ArgumentList @('--quit') -Wait | Out-Null
+$app.WaitForExit(10000) | Out-Null
+Check ($app.HasExited) "--quit закрыл программу (2)"
+
 $log = Join-Path $cfg2 'log.txt'
 if (Test-Path $log) { Write-Host "---- журнал ----"; Get-Content $log | Write-Host }
 Copy-Item $shots -Destination (Join-Path ($env:GITHUB_WORKSPACE ?? '.') 'ui-shots') -Recurse -Force

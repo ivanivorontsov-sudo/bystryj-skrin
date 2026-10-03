@@ -273,6 +273,7 @@ namespace BystryjSkrin
             if (e.Button == MouseButtons.Right || e.Button == MouseButtons.Middle) { cancelPending = true; return; }
             if (e.Button != MouseButtons.Left) return;
             dragging = true;
+            if (flash != null) { flash = null; flashTimer.Stop(); }
             start = ClampToClient(e.Location);
             cursor = start;
             selection = RectMath.FromPoints(start, start);

@@ -27,7 +27,7 @@ namespace BystryjSkrin
         /// <summary>Для CI: путь последнего сохранённого файла пишется сюда.</summary>
         public static string LastSavedMarker;
 
-        public TrayApp(string configDir, bool captureNow)
+        public TrayApp(string configDir, bool captureNow, bool openSettings = false)
         {
             this.configDir = configDir;
             settingsPath = Path.Combine(configDir, "settings.ini");
@@ -63,7 +63,7 @@ namespace BystryjSkrin
             tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) StartCapture(150); };
             UpdateHotkeyTexts();
 
-            invoker.BeginInvoke(new Action(() => Startup(captureNow)));
+            invoker.BeginInvoke(new Action(() => Startup(captureNow, openSettings)));
         }
 
         public static Icon LoadAppIcon(int size)
@@ -78,7 +78,7 @@ namespace BystryjSkrin
             try { invoker.BeginInvoke(new Action(() => Safe("команда", a))); } catch (Exception ex) { Log.Error("Post", ex); }
         }
 
-        private void Startup(bool captureNow)
+        private void Startup(bool captureNow, bool openSettings)
         {
             Log.Write("Запуск. Версия " + Application.ProductVersion + ", exe: " + Application.ExecutablePath);
             if (settings.LoadWarnings.Count > 0)
@@ -92,6 +92,7 @@ namespace BystryjSkrin
                 ShowToast("Автозапуск отключён в Windows", "Windows выключила автозапуск программы («Диспетчер задач → Автозагрузка»). Включите там или снимите и снова поставьте «Автозапуск с Windows» в меню.", ToastKind.Warning, null, null, null, 10000);
             CheckFolder(false);
             if (captureNow) StartCapture(300);
+            else if (openSettings) invoker.BeginInvoke(new Action(OpenSettings));
         }
 
         // ---------- горячие клавиши ----------
@@ -348,7 +349,7 @@ namespace BystryjSkrin
                 new[] { new ToastAction("Открыть папку", () => Shell.OpenFolder(p)) }, null, 5000);
         }
 
-        private void OpenSettings()
+        public void OpenSettings()
         {
             if (settingsOpen || gate.IsBusy) return;
             settingsOpen = true;
