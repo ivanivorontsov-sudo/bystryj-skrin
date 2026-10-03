@@ -15,14 +15,14 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Сборка
-        run: dotnet build BystryjSkrin.sln -c Release
+        run: dotnet build BystryjSkrin.slnx -c Release
 
       - name: Тесты
         run: dotnet test tests/BystryjSkrin.Tests/BystryjSkrin.Tests.csproj -c Release --no-build --logger "console;verbosity=normal"
@@ -40,12 +40,12 @@ jobs:
           "$h  BystryjSkrin.exe" | Out-File -Encoding ascii dist/BystryjSkrin.exe.sha256
           Write-Host "SHA-256: $h  размер: $((Get-Item dist/BystryjSkrin.exe).Length) байт"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: BystryjSkrin
           path: dist/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: ui-shots
