@@ -102,6 +102,7 @@ namespace BystryjSkrin
                 {
                     Keys parsed;
                     if (!Enum.TryParse(last, true, out parsed) || int.TryParse(last, out _)) return false;
+                    if ((parsed & Keys.Modifiers) != 0) return false; // «Shift», «Control», «Alt» — это не клавиша
                     key = parsed;
                 }
             }
