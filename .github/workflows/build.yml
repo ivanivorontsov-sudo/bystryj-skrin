@@ -1,0 +1,67 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Сборка
+        run: dotnet build BystryjSkrin.sln -c Release
+
+      - name: Тесты
+        run: dotnet test tests/BystryjSkrin.Tests/BystryjSkrin.Tests.csproj -c Release --no-build --logger "console;verbosity=normal"
+
+      - name: Дымовой тест (запуск exe, захват, выделение мышью)
+        shell: pwsh
+        run: ./ci/smoke.ps1 -Exe src/BystryjSkrin/bin/Release/net48/BystryjSkrin.exe
+
+      - name: Подготовка файлов
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item src/BystryjSkrin/bin/Release/net48/BystryjSkrin.exe dist/
+          $h = (Get-FileHash dist/BystryjSkrin.exe -Algorithm SHA256).Hash.ToLower()
+          "$h  BystryjSkrin.exe" | Out-File -Encoding ascii dist/BystryjSkrin.exe.sha256
+          Write-Host "SHA-256: $h  размер: $((Get-Item dist/BystryjSkrin.exe).Length) байт"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BystryjSkrin
+          path: dist/
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-shots
+          path: ui-shots/
+          if-no-files-found: ignore
+
+      - name: Релиз
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag dist/BystryjSkrin.exe dist/BystryjSkrin.exe.sha256 --clobber
+          } else {
+            gh release create $tag dist/BystryjSkrin.exe dist/BystryjSkrin.exe.sha256 --title "Быстрый скрин $tag" --notes-file RELEASE_NOTES.md
+          }
